@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  background: #050505;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background: #050505;
+  color: #f8f4ea;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  outline-color: #d9b766;
+}

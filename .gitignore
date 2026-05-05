@@ -1,0 +1,10 @@
+.env
+.env.local
+.next
+node_modules
+public/uploads/*
+!public/uploads/.gitkeep
+coverage
+playwright-report
+test-results
+prisma/migrations

@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  AVOCAT
+  MANAGER
+  CLIENT
+  PATRON_ENTREPRISE
+}
+
+enum DocumentStatus {
+  BROUILLON
+  ENVOYE
+  ARCHIVE
+}
+
+enum AppointmentStatus {
+  RESERVE
+  ANNULE
+  TERMINE
+}
+
+enum InvoiceStatus {
+  PAYEE
+  IMPAYEE
+}
+
+enum RecruitmentStatus {
+  NOUVELLE
+  EN_REVUE
+  ACCEPTEE
+  REFUSEE
+}
+
+model User {
+  id                  String                   @id @default(cuid())
+  name                String?
+  email               String?                  @unique
+  emailVerified       DateTime?
+  image               String?
+  discordId           String?                  @unique
+  role                UserRole                 @default(CLIENT)
+  accounts            Account[]
+  sessions            Session[]
+  companyMemberships  CompanyMember[]
+  clientCases         LegalCase[]              @relation("CaseClient")
+  assignedCases       LegalCase[]              @relation("CaseAssignee")
+  documents           Document[]               @relation("DocumentOwner")
+  uploadedDocuments   Document[]               @relation("DocumentUploader")
+  appointmentSlots    AppointmentSlot[]        @relation("SlotLawyer")
+  appointments        Appointment[]            @relation("AppointmentClient")
+  invoices            Invoice[]                @relation("InvoiceClient")
+  knowledgeArticles   KnowledgeArticle[]
+  auditLogs           AuditLog[]
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model Account {
+  userId              String
+  type                String
+  provider            String
+  providerAccountId   String
+  refresh_token       String?
+  access_token        String?
+  expires_at          Int?
+  token_type          String?
+  scope               String?
+  id_token            String?
+  session_state       String?
+  user                User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken        String                   @unique
+  userId              String
+  expires             DateTime
+  user                User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier          String
+  token               String
+  expires             DateTime
+
+  @@id([identifier, token])
+}
+
+model Company {
+  id                  String                   @id @default(cuid())
+  name                String
+  registrationNumber  String?
+  notes               String?
+  members             CompanyMember[]
+  cases               LegalCase[]
+  documents           Document[]
+  invoices            Invoice[]
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model CompanyMember {
+  id                  String                   @id @default(cuid())
+  userId              String
+  companyId           String
+  user                User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company             Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt           DateTime                 @default(now())
+
+  @@unique([userId, companyId])
+}
+
+model LegalCase {
+  id                  String                   @id @default(cuid())
+  title               String
+  description         String?
+  companyId           String?
+  clientId            String?
+  assigneeId          String?
+  company             Company?                 @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  client              User?                    @relation("CaseClient", fields: [clientId], references: [id], onDelete: SetNull)
+  assignee            User?                    @relation("CaseAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  documents           Document[]
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model Document {
+  id                  String                   @id @default(cuid())
+  title               String
+  fileName            String
+  storagePath         String
+  mimeType            String
+  status              DocumentStatus           @default(BROUILLON)
+  ownerId             String?
+  uploaderId          String
+  companyId           String?
+  caseId              String?
+  owner               User?                    @relation("DocumentOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  uploader            User                     @relation("DocumentUploader", fields: [uploaderId], references: [id], onDelete: Restrict)
+  company             Company?                 @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  legalCase           LegalCase?               @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model AppointmentSlot {
+  id                  String                   @id @default(cuid())
+  lawyerId            String
+  startsAt            DateTime
+  endsAt              DateTime
+  lawyer              User                     @relation("SlotLawyer", fields: [lawyerId], references: [id], onDelete: Cascade)
+  appointment         Appointment?
+  createdAt           DateTime                 @default(now())
+
+  @@unique([lawyerId, startsAt])
+}
+
+model Appointment {
+  id                  String                   @id @default(cuid())
+  slotId              String                   @unique
+  clientId            String
+  status              AppointmentStatus        @default(RESERVE)
+  slot                AppointmentSlot          @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  client              User                     @relation("AppointmentClient", fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model Invoice {
+  id                  String                   @id @default(cuid())
+  label               String
+  amountCents         Int
+  dueDate             DateTime
+  status              InvoiceStatus            @default(IMPAYEE)
+  clientId            String?
+  companyId           String?
+  client              User?                    @relation("InvoiceClient", fields: [clientId], references: [id], onDelete: SetNull)
+  company             Company?                 @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model KnowledgeCategory {
+  id                  String                   @id @default(cuid())
+  name                String                   @unique
+  articles            KnowledgeArticle[]
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model KnowledgeArticle {
+  id                  String                   @id @default(cuid())
+  title               String
+  content             String
+  categoryId          String
+  authorId            String
+  category            KnowledgeCategory        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  author              User                     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model RecruitmentApplication {
+  id                  String                   @id @default(cuid())
+  firstName           String
+  lastName            String
+  email               String
+  discordUsername     String
+  motivation          String
+  status              RecruitmentStatus        @default(NOUVELLE)
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model AuditLog {
+  id                  String                   @id @default(cuid())
+  actorId             String?
+  action              String
+  target              String
+  metadata            Json?
+  actor               User?                    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  createdAt           DateTime                 @default(now())
+}
