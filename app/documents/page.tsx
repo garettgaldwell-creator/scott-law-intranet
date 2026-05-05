@@ -5,7 +5,8 @@ import { DocumentManager } from "@/components/features/document-manager"
 
 export default async function DocumentsPage() {
   const session = await requireSession()
-  const isInternal = [UserRole.ADMIN, UserRole.AVOCAT, UserRole.MANAGER].includes(session.user.role)
+  const internalRoles: UserRole[] = [UserRole.ADMIN, UserRole.AVOCAT, UserRole.MANAGER]
+  const isInternal = internalRoles.includes(session.user.role)
 
   const documents = await prisma.document.findMany({
     where: isInternal ? {} : { OR: [{ ownerId: session.user.id }, { company: { members: { some: { userId: session.user.id } } } }] },

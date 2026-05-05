@@ -5,7 +5,8 @@ import { InvoiceManager } from "@/components/features/invoice-manager"
 
 export default async function InvoicesPage() {
   const session = await requireSession()
-  const canManage = [UserRole.ADMIN, UserRole.MANAGER].includes(session.user.role)
+  const rolesAllowedToManage: UserRole[] = [UserRole.ADMIN, UserRole.MANAGER]
+  const canManage = rolesAllowedToManage.includes(session.user.role)
 
   const invoices = await prisma.invoice.findMany({
     where: canManage ? {} : { OR: [{ clientId: session.user.id }, { company: { members: { some: { userId: session.user.id } } } }] },

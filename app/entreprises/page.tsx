@@ -5,7 +5,8 @@ import { CompanyManager } from "@/components/features/company-manager"
 
 export default async function CompaniesPage() {
   const session = await requireSession()
-  const isInternal = [UserRole.ADMIN, UserRole.AVOCAT, UserRole.MANAGER].includes(session.user.role)
+  const internalRoles: UserRole[] = [UserRole.ADMIN, UserRole.AVOCAT, UserRole.MANAGER]
+  const isInternal = internalRoles.includes(session.user.role)
 
   const companies = await prisma.company.findMany({
     where: isInternal ? {} : { members: { some: { userId: session.user.id } } },

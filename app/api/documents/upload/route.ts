@@ -42,7 +42,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Métadonnées invalides." }, { status: 400 })
   }
 
-  const canUploadForOthers = [UserRole.ADMIN, UserRole.AVOCAT, UserRole.MANAGER].includes(session.user.role)
+  const rolesAllowedToUploadForOthers: UserRole[] = [UserRole.ADMIN, UserRole.AVOCAT, UserRole.MANAGER]
+  const canUploadForOthers = rolesAllowedToUploadForOthers.includes(session.user.role)
   const ownerId = canUploadForOthers ? parsed.data.clientId : session.user.id
   const storageRoot = process.env.DOCUMENT_STORAGE_PATH ?? "./public/uploads"
   const absoluteRoot = path.resolve(storageRoot)

@@ -5,7 +5,8 @@ import { AppointmentManager } from "@/components/features/appointment-manager"
 
 export default async function AppointmentsPage() {
   const session = await requireSession()
-  const isInternal = [UserRole.ADMIN, UserRole.AVOCAT].includes(session.user.role)
+  const internalRoles: UserRole[] = [UserRole.ADMIN, UserRole.AVOCAT]
+  const isInternal = internalRoles.includes(session.user.role)
 
   const slots = await prisma.appointmentSlot.findMany({
     where: isInternal ? {} : { appointment: null, startsAt: { gte: new Date() } },
