@@ -11,8 +11,8 @@ declare module "next-auth" {
   }
 
   interface User {
-    role: UserRole
-    discordId: string | null
+    role?: UserRole
+    discordId?: string | null
   }
 }
 
